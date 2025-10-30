@@ -1,9 +1,9 @@
-
 import { NextRequest, NextResponse } from "next/server"
 import { requireRole } from "@/lib/permissions"
 import { prisma } from "@/lib/db"
 
-export const dynamic = "force-dynamic"
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET - Obtener registros de auditoría
 export async function GET(request: NextRequest) {
@@ -18,26 +18,14 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
 
-    const where: any = {
-      accion: 'ELIMINAR' // Solo mostrar eliminaciones
-    }
+    const where: any = { accion: 'ELIMINAR' }
 
-    if (entidad) {
-      where.entidad = entidad
-    }
-
-    if (usuarioId) {
-      where.usuarioId = usuarioId
-    }
-
+    if (entidad) where.entidad = entidad
+    if (usuarioId) where.usuarioId = usuarioId
     if (desde || hasta) {
       where.fecha = {}
-      if (desde) {
-        where.fecha.gte = new Date(desde)
-      }
-      if (hasta) {
-        where.fecha.lte = new Date(hasta)
-      }
+      if (desde) where.fecha.gte = new Date(desde)
+      if (hasta) where.fecha.lte = new Date(hasta)
     }
 
     const [registros, total] = await Promise.all([
@@ -61,7 +49,6 @@ export async function GET(request: NextRequest) {
       prisma.registroAuditoria.count({ where })
     ])
 
-    // Obtener información de usuarios
     const usuarioIds = [...new Set(registros.map(r => r.usuarioId))]
     const usuarios = await prisma.user.findMany({
       where: { id: { in: usuarioIds } },

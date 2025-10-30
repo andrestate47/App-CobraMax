@@ -1,0 +1,577 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["windows", "native"]
+}
+
+
+
+
+
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  password            String
+  firstName           String?
+  lastName            String?
+  name                String?
+  role                UserRole             @default(COBRADOR)
+  isActive            Boolean              @default(true) @map("activo")
+  timeLimit           Int?
+  lastLogin           DateTime?
+  supervisorId        String?              @map("supervisor_id")
+  numeroRuta          String?              @map("numero_ruta")
+  profilePhoto        String?              @map("profile_photo")
+  phone               String?
+  phoneReferencial    String?              @map("phone_referencial")
+  address             String?
+  pais                String?
+  ciudad              String?
+  ubicacion           String?
+  mapLink             String?              @map("map_link")
+  referenciaFamiliar  String?              @map("referencia_familiar")
+  referenciaTrabajo   String?              @map("referencia_trabajo")
+  documentoIdentificacion String?          @map("documento_identificacion")
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  accounts            Account[]
+  cierresDia          CierreDia[]
+  configuracionSueldo ConfiguracionSueldo?
+  gastos              Gasto[]
+  pagos               Pago[]
+  pagosSueldoCobrador PagoSueldo[]         @relation("CobradorPagos")
+  pagosSueldoPagador  PagoSueldo[]         @relation("PagadorPagos")
+  prestamos           Prestamo[]
+  sessions            Session[]
+  transferencias      Transferencia[]
+  permissions         UserPermission[]
+  timeUsage           UserTimeUsage[]
+  visitasCliente      VisitaCliente[]
+  supervisor          User?                @relation("UserSupervisor", fields: [supervisorId], references: [id])
+  supervisados        User[]               @relation("UserSupervisor")
+  sususCreados        Susu[]
+  participacionesSusu SusuParticipante[]
+  dispositivos        DispositivoAutorizado[]
+  movimientosCajaChica MovimientoCajaChica[] @relation("CobradorCajaChica")
+  movimientosAsignados MovimientoCajaChica[] @relation("AsignadorCajaChica")
+
+  @@map("users")
+}
+
+model UserPermission {
+  id         String     @id @default(cuid())
+  userId     String     @map("user_id")
+  permission Permission
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permission])
+  @@map("user_permissions")
+}
+
+model UserTimeUsage {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  date         DateTime @db.Date
+  minutes      Int      @default(0)
+  lastActivity DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("user_time_usage")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verificationtokens")
+}
+
+model Cliente {
+  id                    String        @id @default(cuid())
+  codigoCliente         String        @unique
+  documento             String        @unique
+  nombre                String
+  apellido              String
+  direccionCliente      String
+  direccionCobro        String?
+  telefono              String?
+  referenciasPersonales String?
+  pais                  String?
+  ciudad                String?
+  foto                  String?
+  fotoDocumento         String?
+  activo                Boolean       @default(true)
+  ultimaVisita          DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  prestamos             Prestamo[]
+  visitas               VisitaCliente[]
+
+  @@map("clientes")
+}
+
+model Prestamo {
+  id                  String          @id @default(cuid())
+  clienteId           String          @map("cliente_id")
+  userId              String          @map("user_id")
+  monto               Decimal         @db.Decimal(10, 2)
+  interes             Decimal         @db.Decimal(5, 2)
+  tipoPago            TipoPago        @default(DIARIO)
+  cuotas              Int
+  valorCuota          Decimal         @db.Decimal(10, 2)
+  fechaInicio         DateTime
+  fechaFin            DateTime
+  estado              EstadoPrestamo  @default(ACTIVO)
+  observaciones       String?
+  tipoCredito         TipoCredito     @default(EFECTIVO)
+  interesTotal        Decimal?        @db.Decimal(10, 2)
+  diasGracia          Int             @default(0)
+  moraCredito         Decimal         @default(0) @db.Decimal(5, 2)
+  microseguroTipo     TipoMicroseguro @default(NINGUNO) @map("microseguro_tipo")
+  microseguroValor    Decimal         @default(0) @db.Decimal(10, 2) @map("microseguro_valor")
+  microseguroTotal    Decimal         @default(0) @db.Decimal(10, 2) @map("microseguro_total")
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  pagos               Pago[]
+  cliente             Cliente         @relation(fields: [clienteId], references: [id])
+  usuario             User            @relation(fields: [userId], references: [id])
+  transferencias      Transferencia[]
+
+  @@map("prestamos")
+}
+
+model Pago {
+  id            String   @id @default(cuid())
+  prestamoId    String   @map("prestamo_id")
+  userId        String   @map("user_id")
+  monto         Decimal  @db.Decimal(10, 2)
+  fecha         DateTime @default(now())
+  observaciones String?
+  modificado    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  prestamo      Prestamo @relation(fields: [prestamoId], references: [id], onDelete: Cascade)
+  usuario       User     @relation(fields: [userId], references: [id])
+
+  @@map("pagos")
+}
+
+model Gasto {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  concepto        String
+  monto           Decimal  @db.Decimal(10, 2)
+  fecha           DateTime @default(now())
+  observaciones   String?
+  fotoComprobante Json?  @map("foto_comprobante")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  usuario         User     @relation(fields: [userId], references: [id])
+
+  @@map("gastos")
+}
+
+model CierreDia {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  fecha         DateTime @unique
+  totalCobrado  Decimal  @db.Decimal(12, 2)
+  totalPrestado Decimal  @db.Decimal(12, 2)
+  totalGastos   Decimal  @db.Decimal(12, 2)
+  saldoEfectivo Decimal  @db.Decimal(12, 2)
+  observaciones String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  usuario       User     @relation(fields: [userId], references: [id])
+
+  @@map("cierres_dia")
+}
+
+model Transferencia {
+  id              String   @id @default(cuid())
+  prestamoId      String   @map("prestamo_id")
+  userId          String   @map("user_id")
+  monto           Decimal  @db.Decimal(10, 2)
+  banco           String?
+  referencia      String?
+  fotoComprobante String
+  observaciones   String?
+  fecha           DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  prestamo        Prestamo @relation(fields: [prestamoId], references: [id], onDelete: Cascade)
+  usuario         User     @relation(fields: [userId], references: [id])
+
+  @@map("transferencias")
+}
+
+model ConfiguracionSueldo {
+  id                     String       @id @default(cuid())
+  userId                 String       @unique @map("user_id")
+  salarioBase            Decimal      @default(0) @db.Decimal(10, 2)
+  comisionPorCobro       Decimal      @default(0) @db.Decimal(5, 2)
+  limitePorcentajeAvance Int          @default(50)
+  montoMinimoAvance      Decimal      @default(0) @db.Decimal(10, 2)
+  activo                 Boolean      @default(true)
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  usuario                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pagosSueldo            PagoSueldo[]
+
+  @@map("configuraciones_sueldo")
+}
+
+model PagoSueldo {
+  id              String               @id @default(cuid())
+  cobradorId      String               @map("cobrador_id")
+  pagadorId       String               @map("pagador_id")
+  configuracionId String?              @map("configuracion_id")
+  tipo            TipoPagoSueldo       @default(SUELDO)
+  periodo         String?
+  montoBase       Decimal              @db.Decimal(10, 2)
+  montoComisiones Decimal              @default(0) @db.Decimal(10, 2)
+  montoTotal      Decimal              @db.Decimal(10, 2)
+  montoAvances    Decimal              @default(0) @db.Decimal(10, 2)
+  montoFinal      Decimal              @db.Decimal(10, 2)
+  estado          EstadoPagoSueldo     @default(PENDIENTE)
+  observaciones   String?
+  fechaPago       DateTime?
+  metodoPago      String?
+  comprobante     String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  cobrador        User                 @relation("CobradorPagos", fields: [cobradorId], references: [id])
+  configuracion   ConfiguracionSueldo? @relation(fields: [configuracionId], references: [id])
+  pagador         User                 @relation("PagadorPagos", fields: [pagadorId], references: [id])
+
+  @@map("pagos_sueldo")
+}
+
+model VisitaCliente {
+  id         String   @id @default(cuid())
+  clienteId  String   @map("cliente_id")
+  userId     String   @map("user_id")
+  fecha      DateTime @default(now())
+  tipo       TipoVisita @default(COBRO)
+  resultado  String?
+  observaciones String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  cliente    Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  usuario    User     @relation(fields: [userId], references: [id])
+
+  @@map("visitas_cliente")
+}
+
+model DispositivoAutorizado {
+  id            String              @id @default(cuid())
+  userId        String              @map("user_id")
+  deviceId      String              @map("device_id")
+  userAgent     String?             @map("user_agent")
+  ipAddress     String?             @map("ip_address")
+  deviceName    String?             @map("device_name")
+  estado        EstadoDispositivo   @default(PENDIENTE)
+  aprobadoPor   String?             @map("aprobado_por")
+  fechaAprobacion DateTime?         @map("fecha_aprobacion")
+  ultimoAcceso  DateTime            @default(now()) @map("ultimo_acceso")
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  usuario       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+  @@map("dispositivos_autorizados")
+}
+
+enum UserRole {
+  COBRADOR
+  SUPERVISOR
+  ADMINISTRADOR
+}
+
+enum Permission {
+  SINCRONIZAR_DATOS
+  REGISTRAR_COBROS
+  MAPA_CLIENTES
+  REGISTRAR_GASTOS
+  REGISTRAR_INGRESOS
+  VER_REPORTES
+  VER_DASHBOARD
+  VER_LISTADO_GENERAL
+  VER_DETALLES_PRESTAMO
+  CREAR_CLIENTES
+  EDITAR_CLIENTES
+  CREAR_PRESTAMOS
+  EDITAR_PRESTAMOS
+  ELIMINAR_PRESTAMOS
+  REGISTRAR_TRANSFERENCIAS
+  VER_TRANSFERENCIAS
+  GESTIONAR_USUARIOS
+  VER_AUDITORIA
+  CONFIGURAR_SISTEMA
+  GESTIONAR_PERMISOS
+  REALIZAR_CIERRE_DIA
+  VER_CIERRES_HISTORICOS
+}
+
+enum TipoPago {
+  DIARIO
+  SEMANAL
+  LUNES_A_VIERNES
+  LUNES_A_SABADO
+  QUINCENAL
+  CATORCENAL
+  FIN_DE_MES
+  MENSUAL
+  TRIMESTRAL
+  CUATRIMESTRAL
+  SEMESTRAL
+  ANUAL
+}
+
+enum EstadoPrestamo {
+  ACTIVO
+  CANCELADO
+  VENCIDO
+  RENOVADO
+}
+
+enum TipoCredito {
+  EFECTIVO
+  TRANSFERENCIA
+}
+
+enum TipoMicroseguro {
+  NINGUNO
+  MONTO_FIJO
+  PORCENTAJE
+}
+
+enum TipoPagoSueldo {
+  SUELDO
+  AVANCE
+  COMISION_EXTRA
+  DESCUENTO
+}
+
+enum EstadoPagoSueldo {
+  PENDIENTE
+  PAGADO
+  CANCELADO
+  RECHAZADO
+}
+
+enum TipoVisita {
+  COBRO
+  SEGUIMIENTO
+  NEGOCIACION
+  ENTREGA_DOCUMENTOS
+  VERIFICACION
+  OTROS
+}
+
+model Susu {
+  id               String             @id @default(cuid())
+  nombre           String
+  descripcion      String?
+  montoTotal       Decimal            @db.Decimal(10, 2)
+  frecuencia       FrecuenciaSusu     @default(SEMANAL)
+  fechaInicio      DateTime
+  fechaFin         DateTime?
+  estado           EstadoSusu         @default(ACTIVO)
+  creadorId        String             @map("creador_id")
+  observaciones    String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  creador          User               @relation(fields: [creadorId], references: [id])
+  participantes    SusuParticipante[]
+  pagos            SusuPago[]
+
+  @@map("susus")
+}
+
+model SusuParticipante {
+  id              String         @id @default(cuid())
+  susuId          String         @map("susu_id")
+  userId          String         @map("user_id")
+  orden           Int
+  montoPorPeriodo Decimal        @db.Decimal(10, 2)
+  yaRecibio       Boolean        @default(false)
+  fechaRecepcion  DateTime?
+  estado          EstadoParticipante @default(ACTIVO)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  susu            Susu           @relation(fields: [susuId], references: [id], onDelete: Cascade)
+  usuario         User           @relation(fields: [userId], references: [id])
+  pagos           SusuPago[]
+
+  @@unique([susuId, userId])
+  @@unique([susuId, orden])
+  @@map("susu_participantes")
+}
+
+model SusuPago {
+  id              String           @id @default(cuid())
+  susuId          String           @map("susu_id")
+  participanteId  String           @map("participante_id")
+  numeroPeriodo   Int
+  monto           Decimal          @db.Decimal(10, 2)
+  fechaPago       DateTime         @default(now())
+  metodoPago      MetodoPagoSusu   @default(SALDO)
+  estado          EstadoPagoSusu   @default(COMPLETADO)
+  observaciones   String?
+  comprobante     String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  susu            Susu             @relation(fields: [susuId], references: [id], onDelete: Cascade)
+  participante    SusuParticipante @relation(fields: [participanteId], references: [id], onDelete: Cascade)
+
+  @@map("susu_pagos")
+}
+
+enum FrecuenciaSusu {
+  SEMANAL
+  QUINCENAL
+  MENSUAL
+}
+
+enum EstadoSusu {
+  ACTIVO
+  COMPLETADO
+  CANCELADO
+}
+
+enum EstadoParticipante {
+  ACTIVO
+  RETIRADO
+  COMPLETADO
+}
+
+enum MetodoPagoSusu {
+  SALDO
+  DEPOSITO
+  TRANSFERENCIA
+}
+
+enum EstadoPagoSusu {
+  COMPLETADO
+  RETRASO
+  PENDIENTE
+}
+
+enum EstadoDispositivo {
+  PENDIENTE
+  AUTORIZADO
+  RECHAZADO
+  BLOQUEADO
+}
+
+model RegistroAuditoria {
+  id              String           @id @default(cuid())
+  usuarioId       String           @map("usuario_id")
+  accion          TipoAccion
+  entidad         TipoEntidad
+  entidadId       String           @map("entidad_id")
+  detalles        String?          @db.Text
+  ipAddress       String?          @map("ip_address")
+  userAgent       String?          @map("user_agent")
+  fecha           DateTime         @default(now())
+  createdAt       DateTime         @default(now())
+
+  @@map("registros_auditoria")
+}
+
+model MovimientoCajaChica {
+  id                String                @id @default(cuid())
+  cobradorId        String                @map("cobrador_id")
+  asignadoPorId     String?               @map("asignado_por_id")
+  tipo              TipoMovimientoCaja    @default(ENTREGA)
+  monto             Decimal               @db.Decimal(10, 2)
+  saldoAnterior     Decimal               @db.Decimal(10, 2)
+  saldoNuevo        Decimal               @db.Decimal(10, 2)
+  fecha             DateTime              @default(now())
+  observaciones     String?               @db.Text
+  descripcion       String?               @db.Text
+  comprobante       String?
+  estado            EstadoMovimiento      @default(APROBADO)
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  cobrador          User                  @relation("CobradorCajaChica", fields: [cobradorId], references: [id])
+  asignadoPor       User?                 @relation("AsignadorCajaChica", fields: [asignadoPorId], references: [id])
+
+  @@map("movimientos_caja_chica")
+}
+
+enum EstadoMovimiento {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
+
+enum TipoAccion {
+  CREAR
+  MODIFICAR
+  ELIMINAR
+}
+
+enum TipoEntidad {
+  CLIENTE
+  PRESTAMO
+  PAGO
+  GASTO
+  TRANSFERENCIA
+  USUARIO
+  CONFIGURACION_SUELDO
+  PAGO_SUELDO
+  SUSU
+  DISPOSITIVO
+  CAJA_CHICA
+}
+
+enum TipoMovimientoCaja {
+  ENTREGA
+  ENTREGADO
+  DEVOLUCION
+  DEVUELTO
+  AJUSTE
+  GASTO
+  GASTADO
+}

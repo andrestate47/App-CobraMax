@@ -1,0 +1,194 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Sistema de Pagos</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .test-section { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .test-button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        .test-button:hover { background: #0056b3; }
+        .result { margin-top: 10px; padding: 10px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        textarea { width: 100%; height: 200px; font-family: monospace; font-size: 12px; }
+        input, select { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Debug Sistema de Pagos</h1>
+        
+        <div class="test-section">
+            <h3>1. Verificar Conexión API</h3>
+            <button class="test-button" onclick="testAPI()">Test API Connection</button>
+            <div id="api-result" class="result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>2. Login de Usuario</h3>
+            <input type="email" id="email" placeholder="Email" value="admin@cobranza.com">
+            <input type="password" id="password" placeholder="Password" value="admin123">
+            <button class="test-button" onclick="login()">Login</button>
+            <div id="login-result" class="result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>3. Obtener Préstamos</h3>
+            <button class="test-button" onclick="getPresta()">Get Préstamos</button>
+            <div id="prestamos-result" class="result"></div>
+            <textarea id="prestamos-data"></textarea>
+        </div>
+        
+        <div class="test-section">
+            <h3>4. Test Pago</h3>
+            <input type="text" id="prestamoId" placeholder="ID del Préstamo">
+            <input type="number" id="monto" placeholder="Monto" value="50000">
+            <input type="text" id="observaciones" placeholder="Observaciones">
+            <button class="test-button" onclick="testPago()">Test Pago</button>
+            <div id="pago-result" class="result"></div>
+            <textarea id="pago-data"></textarea>
+        </div>
+        
+        <div class="test-section">
+            <h3>5. Logs del Sistema</h3>
+            <button class="test-button" onclick="clearLogs()">Clear</button>
+            <textarea id="logs" readonly></textarea>
+        </div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logsArea = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            logsArea.value += `[${timestamp}] ${message}\n`;
+            logsArea.scrollTop = logsArea.scrollHeight;
+            console.log(message);
+        }
+        
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.className = `result ${type}`;
+            element.textContent = message;
+            log(`${type.toUpperCase()}: ${message}`);
+        }
+        
+        async function testAPI() {
+            try {
+                log('Testing API connection...');
+                const response = await fetch('/api/auth/providers');
+                if (response.ok) {
+                    showResult('api-result', '✅ API está funcionando correctamente', 'success');
+                } else {
+                    showResult('api-result', `❌ API error: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showResult('api-result', `❌ Error de conexión: ${error.message}`, 'error');
+            }
+        }
+        
+        async function login() {
+            try {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                
+                log(`Attempting login with ${email}...`);
+                
+                const response = await fetch('/api/auth/signin/credentials', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                if (response.ok) {
+                    showResult('login-result', '✅ Login exitoso', 'success');
+                } else {
+                    const error = await response.text();
+                    showResult('login-result', `❌ Login falló: ${error}`, 'error');
+                }
+            } catch (error) {
+                showResult('login-result', `❌ Error en login: ${error.message}`, 'error');
+            }
+        }
+        
+        async function getPresta() {
+            try {
+                log('Obteniendo préstamos...');
+                const response = await fetch('/api/prestamos');
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('prestamos-result', `✅ Obtenidos ${data.length} préstamos`, 'success');
+                    document.getElementById('prestamos-data').value = JSON.stringify(data, null, 2);
+                    
+                    if (data.length > 0) {
+                        document.getElementById('prestamoId').value = data[0].id;
+                    }
+                } else {
+                    const error = await response.text();
+                    showResult('prestamos-result', `❌ Error: ${error}`, 'error');
+                }
+            } catch (error) {
+                showResult('prestamos-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testPago() {
+            try {
+                const prestamoId = document.getElementById('prestamoId').value;
+                const monto = parseFloat(document.getElementById('monto').value);
+                const observaciones = document.getElementById('observaciones').value;
+                
+                log(`Testing pago - Préstamo: ${prestamoId}, Monto: ${monto}...`);
+                
+                const pagoData = {
+                    prestamoId,
+                    monto,
+                    observaciones
+                };
+                
+                log('Payload: ' + JSON.stringify(pagoData));
+                
+                const response = await fetch('/api/pagos', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(pagoData)
+                });
+                
+                const responseText = await response.text();
+                log(`Response status: ${response.status}`);
+                log(`Response body: ${responseText}`);
+                
+                if (response.ok) {
+                    const result = JSON.parse(responseText);
+                    showResult('pago-result', '✅ Pago registrado exitosamente', 'success');
+                    document.getElementById('pago-data').value = JSON.stringify(result, null, 2);
+                } else {
+                    showResult('pago-result', `❌ Error en pago: ${responseText}`, 'error');
+                    document.getElementById('pago-data').value = responseText;
+                }
+            } catch (error) {
+                log(`Error catch: ${error.message}`);
+                showResult('pago-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').value = '';
+        }
+        
+        // Auto-test on load
+        window.onload = function() {
+            log('Debug page loaded');
+            testAPI();
+        };
+    </script>
+</body>
+</html>

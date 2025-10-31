@@ -1,12 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2020",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "es5",
-      "es2020"
-    ],
+    "lib": ["dom", "dom.iterable", "es2020"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -18,14 +13,12 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "baseUrl": "./app",
+    "plugins": [{ "name": "next" }],
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["*"]
+      "@/*": ["app/*"],
+      "@components/*": ["app/components/*"],
+      "@ui/*": ["app/components/ui/*"]
     }
   },
   "include": [
@@ -35,7 +28,5 @@
     ".next/types/**/*.ts",
     ".build/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

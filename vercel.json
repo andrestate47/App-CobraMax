@@ -1,0 +1,17 @@
+{
+  "buildCommand": "npm install --legacy-peer-deps && npm run build",
+  "outputDirectory": ".vercel/output",
+  "functions": {
+    "api/admin/auditoria.js": {
+      "runtime": "nodejs18.x",
+      "memory": 512
+    }
+  },
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/(.*)", "dest": "/" }
+  ],
+  "env": {
+    "NEXT_PUBLIC_DISABLE_ESLINT": "true"
+  }
+}

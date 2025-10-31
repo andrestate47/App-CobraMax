@@ -1,11 +1,7 @@
 {
   "buildCommand": "npm install --legacy-peer-deps && npm run build",
   "outputDirectory": ".vercel/output",
-  "functions": {
-    "api/**/*.{js,ts}": {
-      "runtime": "nodejs18.x"
-    }
-  },
+  "framework": "nextjs",
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1" },
     { "src": "/(.*)", "dest": "/" }

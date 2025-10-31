@@ -1,6 +1,5 @@
 {
-  "rootDirectory": "app",
   "buildCommand": "npm install --legacy-peer-deps && npm run build",
-  "outputDirectory": "app/.vercel/output",
+  "outputDirectory": ".vercel/output",
   "framework": "nextjs"
 }

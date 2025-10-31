@@ -1,9 +1,9 @@
-const path = require('path');
+const path = require("path");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // 📦 Directorio de salida (donde Next genera los archivos de build)
-  distDir: '.next',
+  distDir: ".next",
 
   // ⚙️ Configuración experimental para tracing (evita rutas duplicadas como app/app/.next)
   experimental: {
@@ -23,6 +23,12 @@ const nextConfig = {
   // 🖼️ Desactiva la optimización de imágenes (útil si no usas next/image o AWS)
   images: {
     unoptimized: true,
+  },
+
+  // 🧭 Agrega alias global para rutas absolutas desde /app
+  webpack: (config) => {
+    config.resolve.alias["@"] = path.resolve(__dirname, "app");
+    return config;
   },
 };
 
